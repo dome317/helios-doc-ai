@@ -34,7 +34,7 @@ MAX_EXTRACTION_CHARS = 15000
 MAX_PDF_SIZE_MB = 20
 MAX_PDF_PAGES = 100
 DE_CO2_EMISSION_FACTOR_KG_PER_KWH = 0.4
-CLAUDE_MODEL = "claude-sonnet-4-6"
+CLAUDE_MODEL = "claude-sonnet-4-20250514"
 MAX_API_CALLS_PER_SESSION = 20
 
 ELS_NFC_PARAMS = {
@@ -215,7 +215,7 @@ def _product_to_text(p: dict) -> str:
     return " | ".join(parts)
 
 
-CLAUDE_MODEL_FALLBACK = "claude-sonnet-4-20250514"
+CLAUDE_MODEL_FALLBACK = "claude-3-5-sonnet-20241022"
 
 
 def call_claude(system_prompt: str, user_content: str) -> str | None:
@@ -261,7 +261,7 @@ def call_claude(system_prompt: str, user_content: str) -> str | None:
             block = response.content[0]
             return getattr(block, "text", None)
 
-        except anthropic.NotFoundError:
+        except (anthropic.NotFoundError, anthropic.BadRequestError):
             last_error = f"Modell '{model_id}' nicht verfügbar."
             continue
         except anthropic.AuthenticationError:
@@ -275,9 +275,6 @@ def call_claude(system_prompt: str, user_content: str) -> str | None:
                 "API-Rate-Limit erreicht. Bitte warten Sie einen Moment "
                 "und versuchen Sie es erneut."
             )
-            return None
-        except anthropic.BadRequestError as e:
-            st.error(f"Ungültige Anfrage an die API: {e.message}")
             return None
         except anthropic.APIConnectionError:
             st.error(
@@ -506,6 +503,8 @@ def _test_api_connection(api_key: str):
             st.success(f"Verbindung OK! Modell: {model_id}", icon="✅")
             return
         except anthropic.NotFoundError:
+            continue
+        except anthropic.BadRequestError:
             continue
         except anthropic.AuthenticationError:
             st.error("API-Key ist ungültig. Bitte prüfen.", icon="❌")
