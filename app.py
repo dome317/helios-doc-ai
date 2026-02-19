@@ -1310,29 +1310,53 @@ def main():
         unsafe_allow_html=True,
     )
 
-    with st.expander("Was ist HeliosDocAI?", expanded=False):
+    with st.expander("Was ist HeliosDocAI? – Projekt-Info & Anleitung zum Ausprobieren", expanded=True):
         st.markdown(
             "**HeliosDocAI** ist ein funktionsfähiger AI-Prototyp, der zeigt, wie "
             "intelligente Dokumentenverarbeitung die Inhouse-Workflows bei Helios "
             "Ventilatoren optimieren kann.\n\n"
             "**Das Problem:** Technische Daten liegen in unstrukturierten Formaten vor "
-            "(PDFs, Datenblätter, Kundenanfragen) und müssen manuell ausgewertet werden.\n\n"
-            "**Die Lösung:** HeliosDocAI extrahiert automatisch technische Parameter, "
-            "findet passende Produkte per natürlichsprachlicher Suche, generiert "
-            "NFC-Konfigurationen und schätzt Energieeinsparungen.\n\n"
-            "**Abgrenzung zum bestehenden Ökosystem:**\n"
-            "- **HeliosSelect** = Regelbasierter Produktkonfigurator (der Nutzer weiß, was er sucht)\n"
+            "(PDFs, Datenblätter, Kundenanfragen) und müssen heute manuell ausgewertet werden.\n\n"
+            "**Die Lösung:** HeliosDocAI extrahiert automatisch technische Parameter aus "
+            "beliebigen Dokumenten, findet passende Produkte per natürlichsprachlicher Suche, "
+            "generiert NFC-Konfigurationen und schätzt Energieeinsparungen – alles AI-gestützt.\n\n"
+            "**Abgrenzung:**\n"
+            "- **HeliosSelect** = Regelbasierter Konfigurator (der Nutzer weiß, was er sucht)\n"
             "- **KWLeasyPlan** = DIN-konforme Lüftungsplanung (strukturierte Eingabe)\n"
             "- **HeliosDocAI** = AI-gestützt: unstrukturierte Inputs → strukturierte Outputs\n\n"
-            "HeliosDocAI ersetzt keine bestehenden Tools, sondern schließt die Lücke "
-            "zwischen unstrukturierten Dokumenten und den vorhandenen Planungstools.\n\n"
-            "| Feature | Technologie | Was es zeigt |\n"
+            "HeliosDocAI ersetzt keine bestehenden Tools, sondern schließt die Lücke dazwischen."
+        )
+        st.markdown("---")
+        st.markdown("### So können Sie die App ausprobieren")
+        st.markdown(
+            "Die App funktioniert sofort – **kein Setup, kein API-Key nötig.** "
+            "Klicken Sie einfach durch die Tabs:\n\n"
+            "**1. Extraktion** – Klicken Sie auf *\"Demo-Daten laden\"*. "
+            "Sie sehen, wie ein PDF-Datenblatt automatisch in eine strukturierte Tabelle "
+            "umgewandelt wird (Produktname, Luftleistung, Schallpegel, Artikelnummer, …).\n\n"
+            "**2. Produktsuche** – Klicken Sie auf *\"Demo-Suche laden\"* oder tippen Sie "
+            "eine Anfrage wie *\"Leiser Ventilator für 25m² Büro mit Luftqualitätssensor\"*. "
+            "Die App durchsucht den Helios-Produktkatalog semantisch und liefert ein "
+            "begründetes Ranking.\n\n"
+            "**3. NFC-Konfiguration** – Wählen Sie ein ELS NFC-Modell und bewegen Sie "
+            "die Slider. Rechts wird live eine JSON-Konfiguration generiert, wie sie "
+            "per NFC auf das Gerät übertragen werden könnte.\n\n"
+            "**4. Energieschätzung** – Stellen Sie Raumparameter ein (Größe, WRG-Wirkungsgrad, "
+            "Temperaturdifferenz). Das ML-Modell berechnet die geschätzte Jahreseinsparung "
+            "in kWh, EUR und CO₂.\n\n"
+            "**5. Modell-Evaluation** – Vergleich: Claude Sonnet vs. Llama-3.3-70B. "
+            "Gleiches Dokument, gleiches Ziel – welches Modell extrahiert besser?\n\n"
+            "**6. PDF-Report** – Fasst alle bisherigen Ergebnisse in einem "
+            "herunterladbaren PDF zusammen."
+        )
+        st.markdown(
+            "| Tab | Feature | Technologie |\n"
             "|---|---|---|\n"
-            "| PDF-Extraktion | Claude Sonnet + PyMuPDF | Unstrukturiert → JSON |\n"
-            "| Produktsuche | sentence-transformers + ChromaDB | Semantisches Retrieval |\n"
-            "| NFC-Konfiguration | Parametrisches Modell | Automatisierte Gerätekonfiguration |\n"
-            "| Energieschätzung | scikit-learn RandomForest | ML auf technischen Daten |\n"
-            "| Modell-Evaluation | Claude vs. Llama Vergleich | Systematische Modellbewertung |"
+            "| Extraktion | PDF → strukturierte Daten | Claude Sonnet 4.6 + PyMuPDF |\n"
+            "| Produktsuche | Natürlichsprachliches Retrieval | sentence-transformers + ChromaDB |\n"
+            "| NFC-Konfiguration | Automatisierte Parametrierung | Parametrisches Modell |\n"
+            "| Energieschätzung | ML-basierte Prognose | scikit-learn RandomForest |\n"
+            "| Modell-Evaluation | Systematischer LLM-Vergleich | Claude vs. Llama |"
         )
 
     tabs = st.tabs(
