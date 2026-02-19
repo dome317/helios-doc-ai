@@ -464,7 +464,7 @@ def build_pdf_report() -> bytes:
     # 5. Methodology
     pdf.section_title("5. Methodik")
     pdf.body_text(
-        "LLM: Claude Sonnet 4 (Anthropic) für strukturierte Extraktion und Ranking. "
+        "LLM: Claude Sonnet 4.6 (Anthropic) für strukturierte Extraktion und Ranking. "
         "Embeddings: sentence-transformers/all-MiniLM-L6-v2 (lokal). "
         "Vector Store: ChromaDB (in-memory). "
         "ML: RandomForest Regressor (scikit-learn) auf synthetischen Daten (n=60). "
@@ -634,7 +634,7 @@ def render_tab_extraction():
 
             api_key = get_api_key()
             if api_key:
-                with st.spinner("Claude analysiert das Dokument..."):
+                with st.spinner("Dokument wird analysiert..."):
                     system_prompt = read_prompt(PROMPT_EXTRACTION)
                     if not system_prompt:
                         st.warning("Extraktions-Prompt nicht verfügbar. Zeige Demo-Daten.")
@@ -770,7 +770,7 @@ def render_tab_search():
                     f"- {r['product']['name']}: {r['product']['description']}"
                     for r in filtered
                 )
-                with st.spinner("Claude erstellt intelligentes Ranking..."):
+                with st.spinner("Intelligentes Ranking wird erstellt..."):
                     system_prompt = read_prompt(PROMPT_MATCHING)
                     if system_prompt:
                         user_msg = (
@@ -1265,7 +1265,7 @@ def render_tab_evaluation():
         st.text_area("Text", comparison["input_text"], height=150, disabled=True)
 
     # Comparison table
-    st.subheader("Vergleich: Claude Sonnet vs. Llama-3.3-70B")
+    st.subheader("Vergleich: Claude Sonnet 4.6 vs. Llama-3.3-70B")
 
     claude_r = comparison["claude_result"]
     llama_r = comparison["llama_result"]
@@ -1279,7 +1279,7 @@ def render_tab_evaluation():
             "Deutsch-Kompetenz",
             "Strukturtreue",
         ],
-        "Claude Sonnet 4": [
+        "Claude Sonnet 4.6": [
             f"{claude_r['fields_extracted']}/{claude_r['fields_total']}",
             "✅ Valide" if claude_r["json_valid"] else "❌ Invalide",
             f"{claude_r['latency_ms']}ms",
@@ -1309,7 +1309,7 @@ def render_tab_evaluation():
     st.subheader("Extraktions-Ergebnisse im Detail")
     col_c, col_l = st.columns(2)
     with col_c:
-        st.markdown("**Claude Sonnet 4**")
+        st.markdown("**Claude Sonnet 4.6**")
         st.json(claude_r["extraction"])
     with col_l:
         st.markdown("**Llama-3.3-70B**")
