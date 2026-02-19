@@ -34,7 +34,7 @@ MAX_EXTRACTION_CHARS = 15000
 MAX_PDF_SIZE_MB = 20
 MAX_PDF_PAGES = 100
 DE_CO2_EMISSION_FACTOR_KG_PER_KWH = 0.4
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = "claude-sonnet-4-6"
 MAX_API_CALLS_PER_SESSION = 20
 
 ELS_NFC_PARAMS = {
@@ -215,7 +215,7 @@ def _product_to_text(p: dict) -> str:
     return " | ".join(parts)
 
 
-CLAUDE_MODEL_FALLBACK = "claude-3-5-sonnet-20241022"
+CLAUDE_MODEL_FALLBACK = "claude-sonnet-4-20250514"
 
 
 def call_claude(system_prompt: str, user_content: str) -> str | None:
