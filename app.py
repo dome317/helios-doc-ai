@@ -26,6 +26,7 @@ PRODUCTS_PATH = BASE_DIR / "helios_products.json"
 DEMO_EXTRACTION = BASE_DIR / "demo_data" / "demo_extraction_result.json"
 DEMO_SEARCH = BASE_DIR / "demo_data" / "demo_search_results.json"
 DEMO_COMPARISON = BASE_DIR / "demo_data" / "demo_comparison.json"
+SAMPLE_PDF = BASE_DIR / "demo_data" / "sample_kwl360_datenblatt.pdf"
 PROMPT_EXTRACTION = BASE_DIR / "prompts" / "extraction_system.md"
 PROMPT_MATCHING = BASE_DIR / "prompts" / "matching_system.md"
 
@@ -589,100 +590,122 @@ def render_sidebar():
 # ---------------------------------------------------------------------------
 
 
+def _process_pdf_bytes(pdf_bytes: bytes) -> None:
+    """Extract text from PDF bytes and run Claude extraction."""
+    import fitz
+
+    if len(pdf_bytes) > MAX_PDF_SIZE_MB * 1024 * 1024:
+        st.error(f"PDF zu groß (max. {MAX_PDF_SIZE_MB} MB).")
+        return
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    if doc.page_count > MAX_PDF_PAGES:
+        st.warning(
+            f"PDF hat {doc.page_count} Seiten. "
+            f"Nur die ersten {MAX_PDF_PAGES} werden verarbeitet."
+        )
+
+    pages = [doc[i] for i in range(min(doc.page_count, MAX_PDF_PAGES))]
+    raw_text = "".join(str(page.get_text()) for page in pages)
+    doc.close()
+
+    if not raw_text.strip():
+        st.warning("Kein Text im PDF gefunden. Möglicherweise ein Scan/Bild-PDF.")
+        return
+
+    with st.expander("Rohtext anzeigen", expanded=False):
+        st.text_area("Extrahierter Text", raw_text, height=200, disabled=True)
+
+    if len(raw_text) > MAX_EXTRACTION_CHARS:
+        st.info(
+            f"Dokument hat {len(raw_text):,} Zeichen. "
+            f"Für die Extraktion werden die ersten {MAX_EXTRACTION_CHARS:,} verwendet."
+        )
+
+    api_key = get_api_key()
+    if api_key:
+        with st.spinner("Dokument wird analysiert..."):
+            system_prompt = read_prompt(PROMPT_EXTRACTION)
+            if not system_prompt:
+                st.warning("Extraktions-Prompt nicht verfügbar. Zeige Demo-Daten.")
+                _load_demo_extraction()
+                return
+            result_text = call_claude(system_prompt, raw_text[:MAX_EXTRACTION_CHARS])
+
+        if result_text:
+            try:
+                cleaned = result_text.strip()
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1]
+                    cleaned = cleaned.rsplit("```", 1)[0]
+                data = json.loads(cleaned)
+                st.session_state["extracted_data"] = data
+                st.success(
+                    f"Extraktion erfolgreich! Konfidenz: {data.get('confidence', 'k.A.')} | "
+                    f"Dokumenttyp: {data.get('document_type', 'k.A.')}"
+                )
+            except json.JSONDecodeError:
+                st.warning(
+                    "KI-Antwort war kein valides JSON. "
+                    "Zeige Demo-Daten als Beispiel."
+                )
+                _load_demo_extraction()
+        else:
+            st.info(
+                "Zeige Demo-Daten als Fallback. "
+                "Bitte Fehlermeldung oben beachten."
+            )
+            _load_demo_extraction()
+    else:
+        st.info(
+            "Demo-Modus: Zeigt vorbereitete Beispiel-Extraktion. "
+            "Für Live-Extraktion API-Key in der Sidebar eingeben."
+        )
+        _load_demo_extraction()
+
+
 def render_tab_extraction():
     st.header("PDF-Extraktion")
     st.markdown(
-        "Laden Sie ein beliebiges PDF hoch (Helios-Datenblatt, Gebäudeplan, "
-        "Kundenanfrage, Installationsprotokoll). Die App extrahiert automatisch "
-        "strukturierte technische Daten."
+        "Laden Sie ein beliebiges PDF hoch oder nutzen Sie das mitgelieferte "
+        "Beispiel-Datenblatt. Die App extrahiert automatisch strukturierte "
+        "technische Daten."
     )
 
     uploaded = st.file_uploader("PDF hochladen", type=["pdf"], key="pdf_upload")
 
     if uploaded is not None:
         try:
-            import fitz
-
-            pdf_bytes = uploaded.read()
-            if len(pdf_bytes) > MAX_PDF_SIZE_MB * 1024 * 1024:
-                st.error(f"PDF zu groß (max. {MAX_PDF_SIZE_MB} MB).")
-                return
-
-            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            if doc.page_count > MAX_PDF_PAGES:
-                st.warning(
-                    f"PDF hat {doc.page_count} Seiten. "
-                    f"Nur die ersten {MAX_PDF_PAGES} werden verarbeitet."
-                )
-
-            pages = [doc[i] for i in range(min(doc.page_count, MAX_PDF_PAGES))]
-            raw_text = "".join(str(page.get_text()) for page in pages)
-            doc.close()
-
-            if not raw_text.strip():
-                st.warning("Kein Text im PDF gefunden. Möglicherweise ein Scan/Bild-PDF.")
-                return
-
-            with st.expander("Rohtext anzeigen", expanded=False):
-                st.text_area("Extrahierter Text", raw_text, height=200, disabled=True)
-
-            if len(raw_text) > MAX_EXTRACTION_CHARS:
-                st.info(
-                    f"Dokument hat {len(raw_text):,} Zeichen. "
-                    f"Für die Extraktion werden die ersten {MAX_EXTRACTION_CHARS:,} verwendet."
-                )
-
-            api_key = get_api_key()
-            if api_key:
-                with st.spinner("Dokument wird analysiert..."):
-                    system_prompt = read_prompt(PROMPT_EXTRACTION)
-                    if not system_prompt:
-                        st.warning("Extraktions-Prompt nicht verfügbar. Zeige Demo-Daten.")
-                        _load_demo_extraction()
-                        return
-                    result_text = call_claude(system_prompt, raw_text[:MAX_EXTRACTION_CHARS])
-
-                if result_text:
-                    try:
-                        cleaned = result_text.strip()
-                        if cleaned.startswith("```"):
-                            cleaned = cleaned.split("\n", 1)[1]
-                            cleaned = cleaned.rsplit("```", 1)[0]
-                        data = json.loads(cleaned)
-                        st.session_state["extracted_data"] = data
-                        st.success(
-                            f"Extraktion erfolgreich! Konfidenz: {data.get('confidence', 'k.A.')} | "
-                            f"Dokumenttyp: {data.get('document_type', 'k.A.')}"
-                        )
-                    except json.JSONDecodeError:
-                        st.warning(
-                            "KI-Antwort war kein valides JSON. "
-                            "Zeige Demo-Daten als Beispiel."
-                        )
-                        _load_demo_extraction()
-                else:
-                    # call_claude already showed a specific error message
-                    st.info(
-                        "Zeige Demo-Daten als Fallback. "
-                        "Bitte Fehlermeldung oben beachten."
-                    )
-                    _load_demo_extraction()
-            else:
-                st.info(
-                    "Demo-Modus: Zeigt vorbereitete Beispiel-Extraktion. "
-                    "Für Live-Extraktion API-Key in der Sidebar eingeben."
-                )
-                _load_demo_extraction()
-
+            _process_pdf_bytes(uploaded.read())
         except Exception:
             st.error("PDF-Verarbeitung fehlgeschlagen.")
             _load_demo_extraction()
 
     else:
         if "extracted_data" not in st.session_state:
-            st.info("Laden Sie ein PDF hoch oder nutzen Sie die Demo-Daten.")
-            if st.button("Demo-Daten laden", key="load_demo_extraction"):
-                _load_demo_extraction()
+            st.info(
+                "Laden Sie ein eigenes PDF hoch oder testen Sie mit dem "
+                "Beispiel-Datenblatt (Helios KWL 360 W ET)."
+            )
+            col_sample, col_demo = st.columns(2)
+            with col_sample:
+                if st.button(
+                    "Beispiel-PDF verwenden",
+                    key="load_sample_pdf",
+                    type="primary",
+                ):
+                    if SAMPLE_PDF.exists():
+                        try:
+                            _process_pdf_bytes(SAMPLE_PDF.read_bytes())
+                        except Exception:
+                            st.error("Beispiel-PDF konnte nicht verarbeitet werden.")
+                            _load_demo_extraction()
+                    else:
+                        st.warning("Beispiel-PDF nicht gefunden. Zeige Demo-Daten.")
+                        _load_demo_extraction()
+            with col_demo:
+                if st.button("Demo-Daten laden", key="load_demo_extraction"):
+                    _load_demo_extraction()
 
     # Display extracted data
     extracted = st.session_state.get("extracted_data")
@@ -1423,9 +1446,9 @@ def main():
         st.markdown(
             "Die App funktioniert sofort – **kein Setup, kein API-Key nötig.** "
             "Klicken Sie einfach durch die Tabs:\n\n"
-            "**1. Extraktion** – Klicken Sie auf *\"Demo-Daten laden\"*. "
-            "Sie sehen, wie ein PDF-Datenblatt automatisch in eine strukturierte Tabelle "
-            "umgewandelt wird (Produktname, Luftleistung, Schallpegel, Artikelnummer, …).\n\n"
+            "**1. Extraktion** – Klicken Sie auf *\"Beispiel-PDF verwenden\"* "
+            "(Helios KWL 360 W ET Datenblatt) oder laden Sie ein eigenes PDF hoch. "
+            "Mit API-Key: Live-Extraktion durch KI. Ohne: vorbereitete Demo-Daten.\n\n"
             "**2. Produktsuche** – Klicken Sie auf *\"Demo-Suche laden\"* oder tippen Sie "
             "eine Anfrage wie *\"Leiser Ventilator für 25m² Büro mit Luftqualitätssensor\"*. "
             "Die App durchsucht den Helios-Produktkatalog semantisch und liefert ein "
