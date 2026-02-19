@@ -1,0 +1,53 @@
+{
+  "products": [
+    {
+      "product_name": "ELS NFC VOC",
+      "airflow_m3h": 100,
+      "pressure_pa": null,
+      "sound_level_dba": 47,
+      "sound_power_dba": 51,
+      "power_consumption_w": 15,
+      "protection_class": "IPX5",
+      "safety_class": "II",
+      "mounting_type": "Einschubmontage in ELS Gehäuse",
+      "diameter_mm": 100,
+      "voltage": "230V AC, 50/60 Hz",
+      "wrg_efficiency_pct": null,
+      "ex_rating": null,
+      "dimensions_mm": null,
+      "weight_kg": null,
+      "room_size_m2": null,
+      "application": "Büro, Besprechungsräume, Praxen, Klassenzimmer",
+      "energy_class": null,
+      "filter_class": "Coarse 50%",
+      "nfc_configurable": true,
+      "article_number": "40764"
+    },
+    {
+      "product_name": "ELS NFC F",
+      "airflow_m3h": 100,
+      "pressure_pa": null,
+      "sound_level_dba": 47,
+      "sound_power_dba": 51,
+      "power_consumption_w": 15,
+      "protection_class": "IPX5",
+      "safety_class": "II",
+      "mounting_type": "Einschubmontage in ELS Gehäuse",
+      "diameter_mm": 100,
+      "voltage": "230V AC, 50/60 Hz",
+      "wrg_efficiency_pct": null,
+      "ex_rating": null,
+      "dimensions_mm": null,
+      "weight_kg": null,
+      "room_size_m2": null,
+      "application": "Bad mit Dusche, Nassräume, Waschküche",
+      "energy_class": null,
+      "filter_class": "Coarse 50%",
+      "nfc_configurable": true,
+      "article_number": "40762"
+    }
+  ],
+  "document_type": "datenblatt",
+  "confidence": 0.89,
+  "raw_requirements": null
+}

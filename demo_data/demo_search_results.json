@@ -1,0 +1,51 @@
+{
+  "query": "Leiser Ventilator für 25m² Büro mit Luftqualitätssensor",
+  "recommendations": [
+    {
+      "rank": 1,
+      "product_id": "ELS-NFC-VOC",
+      "product_name": "ELS NFC VOC",
+      "score": 0.94,
+      "reasoning_de": "Der ELS NFC VOC ist ideal für ein Büro mit 25m² Fläche. Der integrierte VOC-Sensor misst kontinuierlich die Luftqualität und passt die Lüftungsstufe automatisch an. Mit nur 26 dB(A) auf der niedrigsten Stufe ist er extrem leise. Die NFC-Parametrierung erlaubt einfache Anpassung der Schwellenwerte.",
+      "meets_all_requirements": true,
+      "caveats": []
+    },
+    {
+      "rank": 2,
+      "product_id": "ELS-NFC-CO2",
+      "product_name": "ELS NFC CO2",
+      "score": 0.88,
+      "reasoning_de": "Der ELS NFC CO2 bietet CO2-basierte Bedarfslüftung, die für Büroräume mit mehreren Personen besonders sinnvoll ist. Die Geräuschwerte sind identisch zur VOC-Variante. CO2-Messung ist besonders relevant für Meetingräume mit schwankender Belegung.",
+      "meets_all_requirements": true,
+      "caveats": ["CO2-Sensor statt VOC – misst direkt die Atemluftqualität, nicht flüchtige organische Verbindungen"]
+    },
+    {
+      "rank": 3,
+      "product_id": "ELS-NFC",
+      "product_name": "ELS NFC",
+      "score": 0.72,
+      "reasoning_de": "Der Basis-ELS NFC bietet die gleiche leise Performance und NFC-Konfiguration, allerdings ohne integrierten Luftqualitätssensor. Für ein Büro mit geringer Belegung kann die manuelle Stufensteuerung ausreichend sein.",
+      "meets_all_requirements": false,
+      "caveats": ["Kein integrierter Luftqualitätssensor – manuelle Steuerung nötig"]
+    },
+    {
+      "rank": 4,
+      "product_id": "AIRPAL",
+      "product_name": "AirPal Luftreiniger",
+      "score": 0.55,
+      "reasoning_de": "Der AirPal ist ein Standalone-Luftreiniger mit HEPA-Filtration, der ohne Einbau funktioniert. Er reinigt die Luft, ersetzt aber keine kontrollierte Be- und Entlüftung. Als Ergänzung zum ELS NFC VOC sinnvoll.",
+      "meets_all_requirements": false,
+      "caveats": ["Kein Lüftungssystem – nur Luftreinigung", "Kein Einbauventilator"]
+    },
+    {
+      "rank": 5,
+      "product_id": "KWL-EC-70",
+      "product_name": "KWL EC 70",
+      "score": 0.48,
+      "reasoning_de": "Das KWL EC 70 bietet Wärmerückgewinnung und eignet sich für kleine Einheiten. Für ein einzelnes Büro ist es jedoch überdimensioniert und die Installation aufwändiger als ein ELS-Einsatz.",
+      "meets_all_requirements": false,
+      "caveats": ["Überdimensioniert für einzelnes Büro", "Höherer Installationsaufwand"]
+    }
+  ],
+  "general_note": "Für ein 25m² Büro mit Luftqualitätsanspruch ist die ELS NFC-Serie mit Sensorvariante die optimale Wahl. Der VOC-Sensor reagiert auf allgemeine Luftverschlechterung, der CO2-Sensor spezifisch auf Belegung."
+}

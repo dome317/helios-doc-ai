@@ -1,0 +1,80 @@
+{
+  "input_text": "Technisches Datenblatt ELS NFC VOC – Helios Ventilatoren\n\nMultifunktionaler Ventilatoreinsatz mit VOC-Sensor und NFC-Konfiguration.\nArtikel-Nr.: 40764\nLuftleistung: 7,5 – 100 m³/h in 14 Stufen\nWerksseitige Einstellung: Stufe 1: 35 m³/h, Stufe 2: 60 m³/h, Stufe 3: 100 m³/h\nSchalldruckpegel (3m, DIN EN ISO 10140): Stufe 1: 26 dB(A), Stufe 2: 35 dB(A), Stufe 3: 47 dB(A)\nSchutzart: IPX5\nSchutzklasse: II\nNennspannung: 230V AC, 50/60 Hz\nVOC-Sensor: Schwellenwert 100-450 VOC, Modi: Komfort/Intensiv\nFilterklasse: Coarse 50%\nAnschluss: DN 100\nMontageart: Werkzeuglose Einschubmontage",
+  "claude_result": {
+    "model": "Claude Sonnet 4",
+    "latency_ms": 2100,
+    "cost_per_1k_tokens": 0.003,
+    "fields_extracted": 12,
+    "fields_total": 14,
+    "json_valid": true,
+    "json_needed_correction": false,
+    "german_quality": "Sehr gut",
+    "structure_adherence": "Exakt",
+    "extraction": {
+      "products": [
+        {
+          "product_name": "ELS NFC VOC",
+          "airflow_m3h": 100,
+          "pressure_pa": null,
+          "sound_level_dba": 47,
+          "sound_power_dba": null,
+          "power_consumption_w": null,
+          "protection_class": "IPX5",
+          "safety_class": "II",
+          "mounting_type": "Werkzeuglose Einschubmontage",
+          "diameter_mm": 100,
+          "voltage": "230V AC, 50/60 Hz",
+          "wrg_efficiency_pct": null,
+          "ex_rating": null,
+          "filter_class": "Coarse 50%",
+          "nfc_configurable": true,
+          "article_number": "40764"
+        }
+      ],
+      "document_type": "datenblatt",
+      "confidence": 0.92
+    }
+  },
+  "llama_result": {
+    "model": "Llama-3.3-70B (via Groq)",
+    "latency_ms": 800,
+    "cost_per_1k_tokens": 0.0006,
+    "fields_extracted": 9,
+    "fields_total": 14,
+    "json_valid": false,
+    "json_needed_correction": true,
+    "german_quality": "Gut",
+    "structure_adherence": "Kleine Abweichungen",
+    "extraction": {
+      "products": [
+        {
+          "product_name": "ELS NFC VOC",
+          "airflow_m3h": "7.5-100",
+          "sound_level_dba": "26-47",
+          "power_consumption_w": null,
+          "protection_class": "IPX5",
+          "safety_class": "II",
+          "voltage": "230V AC",
+          "diameter_mm": 100,
+          "article_number": "40764"
+        }
+      ],
+      "document_type": "datasheet",
+      "confidence": 0.78
+    },
+    "issues": [
+      "airflow_m3h als String statt Number",
+      "sound_level_dba als Range-String statt Maximalwert",
+      "document_type auf Englisch statt Deutsch",
+      "Weniger Felder extrahiert",
+      "JSON enthielt Markdown-Wrapper (```json)"
+    ]
+  },
+  "comparison_summary": {
+    "winner_accuracy": "Claude Sonnet",
+    "winner_speed": "Llama-3.3-70B",
+    "winner_cost": "Llama-3.3-70B",
+    "recommendation": "Claude Sonnet für produktionskritische Extraktion (höhere Zuverlässigkeit, bessere Strukturtreue). Llama-3.3-70B als schnelle Vorab-Klassifikation oder für unkritische Batch-Verarbeitung bei hohem Volumen.",
+    "key_insight": "Die Qualitätsdifferenz ist besonders bei deutschen Fachbegriffen und strikter JSON-Schema-Einhaltung signifikant. Für den Helios-Use-Case ist Zuverlässigkeit wichtiger als Geschwindigkeit."
+  }
+}
