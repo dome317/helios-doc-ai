@@ -215,8 +215,11 @@ def _product_to_text(p: dict) -> str:
     return " | ".join(parts)
 
 
+CLAUDE_MODEL_FALLBACK = "claude-sonnet-4-20250514"
+
+
 def call_claude(system_prompt: str, user_content: str) -> str | None:
-    """Call Anthropic Claude API. Returns raw text or None on failure."""
+    """Call Anthropic Claude API with specific error handling and model fallback."""
     api_key = get_api_key()
     if not api_key:
         return None
@@ -230,30 +233,72 @@ def call_claude(system_prompt: str, user_content: str) -> str | None:
         )
         return None
 
-    try:
-        import anthropic
+    import anthropic
 
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model=CLAUDE_MODEL,
-            max_tokens=4096,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_content}],
+    client = anthropic.Anthropic(api_key=api_key)
+
+    # Try primary model, fallback on NotFoundError
+    models_to_try = [CLAUDE_MODEL, CLAUDE_MODEL_FALLBACK]
+    last_error = None
+
+    for model_id in models_to_try:
+        try:
+            response = client.messages.create(
+                model=model_id,
+                max_tokens=4096,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_content}],
+            )
+
+            # Track usage
+            st.session_state["api_call_count"] = call_count + 1
+            input_tokens = getattr(response.usage, "input_tokens", 0)
+            output_tokens = getattr(response.usage, "output_tokens", 0)
+            total_cost = st.session_state.get("api_total_cost_usd", 0.0)
+            total_cost += (input_tokens * 3 + output_tokens * 15) / 1_000_000
+            st.session_state["api_total_cost_usd"] = total_cost
+
+            block = response.content[0]
+            return getattr(block, "text", None)
+
+        except anthropic.NotFoundError:
+            last_error = f"Modell '{model_id}' nicht verfügbar."
+            continue
+        except anthropic.AuthenticationError:
+            st.error(
+                "Ungültiger API-Key. Bitte prüfen Sie Ihren Anthropic API-Key "
+                "in der Sidebar."
+            )
+            return None
+        except anthropic.RateLimitError:
+            st.warning(
+                "API-Rate-Limit erreicht. Bitte warten Sie einen Moment "
+                "und versuchen Sie es erneut."
+            )
+            return None
+        except anthropic.BadRequestError as e:
+            st.error(f"Ungültige Anfrage an die API: {e.message}")
+            return None
+        except anthropic.APIConnectionError:
+            st.error(
+                "Verbindung zur Anthropic API fehlgeschlagen. "
+                "Bitte prüfen Sie Ihre Internetverbindung."
+            )
+            return None
+        except anthropic.APIStatusError as e:
+            st.error(f"API-Fehler (Status {e.status_code}). Bitte später erneut versuchen.")
+            return None
+        except Exception:
+            st.warning("Unerwarteter Fehler beim API-Aufruf. Bitte erneut versuchen.")
+            return None
+
+    # All models failed with NotFoundError
+    if last_error:
+        st.error(
+            f"Kein unterstütztes Modell verfügbar ({', '.join(models_to_try)}). "
+            "Bitte kontaktieren Sie den Entwickler."
         )
-
-        # Track usage
-        st.session_state["api_call_count"] = call_count + 1
-        input_tokens = getattr(response.usage, "input_tokens", 0)
-        output_tokens = getattr(response.usage, "output_tokens", 0)
-        total_cost = st.session_state.get("api_total_cost_usd", 0.0)
-        total_cost += (input_tokens * 3 + output_tokens * 15) / 1_000_000
-        st.session_state["api_total_cost_usd"] = total_cost
-
-        block = response.content[0]
-        return getattr(block, "text", None)
-    except Exception:
-        st.warning("API-Aufruf fehlgeschlagen. Bitte API-Key prüfen.")
-        return None
+    return None
 
 
 def generate_training_data(n: int = 60) -> pd.DataFrame:
@@ -444,6 +489,47 @@ def build_pdf_report() -> bytes:
 # ---------------------------------------------------------------------------
 
 
+def _test_api_connection(api_key: str):
+    """Test API key and model availability with a minimal request."""
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=api_key)
+    models_to_try = [CLAUDE_MODEL, CLAUDE_MODEL_FALLBACK]
+
+    for model_id in models_to_try:
+        try:
+            client.messages.create(
+                model=model_id,
+                max_tokens=10,
+                messages=[{"role": "user", "content": "Hi"}],
+            )
+            st.success(f"Verbindung OK! Modell: {model_id}", icon="✅")
+            return
+        except anthropic.NotFoundError:
+            continue
+        except anthropic.AuthenticationError:
+            st.error("API-Key ist ungültig. Bitte prüfen.", icon="❌")
+            return
+        except anthropic.RateLimitError:
+            st.warning("Rate-Limit erreicht. Key ist gültig, aber bitte kurz warten.", icon="⚠️")
+            return
+        except anthropic.APIConnectionError:
+            st.error("Keine Verbindung zur API. Internet prüfen.", icon="❌")
+            return
+        except anthropic.APIStatusError as e:
+            st.error(f"API-Fehler (Status {e.status_code}).", icon="❌")
+            return
+        except Exception:
+            st.error("Unerwarteter Fehler beim Verbindungstest.", icon="❌")
+            return
+
+    st.error(
+        f"Kein unterstütztes Modell verfügbar. "
+        f"Getestet: {', '.join(models_to_try)}",
+        icon="❌",
+    )
+
+
 def render_sidebar():
     with st.sidebar:
         logo_path = BASE_DIR / "assets" / "helios_logo.png"
@@ -486,6 +572,8 @@ def render_sidebar():
                 f"Aufrufe: {call_count}/{MAX_API_CALLS_PER_SESSION} | "
                 f"Kosten: ~${total_cost:.3f}"
             )
+            if st.button("API-Verbindung testen", key="test_api"):
+                _test_api_connection(api_status)
         else:
             st.info("Demo-Modus aktiv", icon="ℹ️")
 
@@ -551,9 +639,7 @@ def render_tab_extraction():
                     system_prompt = read_prompt(PROMPT_EXTRACTION)
                     if not system_prompt:
                         st.warning("Extraktions-Prompt nicht verfügbar. Zeige Demo-Daten.")
-                        data = load_json(DEMO_EXTRACTION)
-                        if data:
-                            st.session_state["extracted_data"] = data
+                        _load_demo_extraction()
                         return
                     result_text = call_claude(system_prompt, raw_text[:MAX_EXTRACTION_CHARS])
 
@@ -570,15 +656,22 @@ def render_tab_extraction():
                             f"Dokumenttyp: {data.get('document_type', 'k.A.')}"
                         )
                     except json.JSONDecodeError:
-                        st.warning("Claude-Antwort war kein valides JSON. Fallback auf Demo-Daten.")
+                        st.warning(
+                            "Claude-Antwort war kein valides JSON. "
+                            "Zeige Demo-Daten als Beispiel."
+                        )
                         _load_demo_extraction()
                 else:
-                    st.warning("API-Aufruf fehlgeschlagen. Zeige Demo-Daten.")
+                    # call_claude already showed a specific error message
+                    st.info(
+                        "Zeige Demo-Daten als Fallback. "
+                        "Bitte Fehlermeldung oben beachten."
+                    )
                     _load_demo_extraction()
             else:
-                st.warning(
-                    "⚠️ Demo-Modus: Zeigt vorbereitete Beispiel-Extraktion. "
-                    "Für Live-Extraktion ANTHROPIC_API_KEY in Sidebar eingeben."
+                st.info(
+                    "Demo-Modus: Zeigt vorbereitete Beispiel-Extraktion. "
+                    "Für Live-Extraktion API-Key in der Sidebar eingeben."
                 )
                 _load_demo_extraction()
 

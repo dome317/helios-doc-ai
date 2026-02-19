@@ -2,7 +2,8 @@
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pandas as pd
@@ -475,3 +476,298 @@ class TestEnergyModel:
         pred_small = model.predict(pd.DataFrame([base]))[0]
         pred_large = model.predict(pd.DataFrame([large]))[0]
         assert pred_large > pred_small
+
+
+# ---------------------------------------------------------------------------
+# call_claude error handling
+# ---------------------------------------------------------------------------
+
+
+def _make_mock_response(text="test response"):
+    """Create a mock Anthropic API response."""
+    block = SimpleNamespace(text=text)
+    usage = SimpleNamespace(input_tokens=100, output_tokens=50)
+    return SimpleNamespace(content=[block], usage=usage)
+
+
+class TestCallClaudeErrorHandling:
+    """Deep tests for API error handling in call_claude."""
+
+    @pytest.fixture(autouse=True)
+    def setup_session(self):
+        """Set up a fake API key in session state and clean up after."""
+        import streamlit as st
+        st.session_state["anthropic_api_key"] = "sk-ant-test-key-123"
+        st.session_state["api_call_count"] = 0
+        st.session_state["api_total_cost_usd"] = 0.0
+        yield
+        for key in ["anthropic_api_key", "api_call_count", "api_total_cost_usd"]:
+            st.session_state.pop(key, None)
+
+    def test_no_api_key_returns_none(self):
+        """Without API key, call_claude must return None immediately."""
+        import streamlit as st
+        st.session_state["anthropic_api_key"] = ""
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    def test_usage_limit_returns_none(self):
+        """When limit reached, call_claude must return None."""
+        import streamlit as st
+        st.session_state["api_call_count"] = app.MAX_API_CALLS_PER_SESSION
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    @patch("anthropic.Anthropic")
+    def test_successful_call(self, mock_anthropic_cls):
+        """Successful API call returns text and tracks usage."""
+        import streamlit as st
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = _make_mock_response("result json")
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system prompt", "user content")
+        assert result == "result json"
+        assert st.session_state["api_call_count"] == 1
+        assert st.session_state["api_total_cost_usd"] > 0
+
+    @patch("anthropic.Anthropic")
+    def test_auth_error_returns_none(self, mock_anthropic_cls):
+        """AuthenticationError must show error and return None."""
+        import anthropic
+        mock_client = MagicMock()
+        mock_client.messages.create.side_effect = anthropic.AuthenticationError(
+            message="invalid api key",
+            response=MagicMock(status_code=401),
+            body={"error": {"message": "invalid api key"}},
+        )
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    @patch("anthropic.Anthropic")
+    def test_rate_limit_returns_none(self, mock_anthropic_cls):
+        """RateLimitError must show warning and return None."""
+        import anthropic
+        mock_client = MagicMock()
+        mock_client.messages.create.side_effect = anthropic.RateLimitError(
+            message="rate limited",
+            response=MagicMock(status_code=429),
+            body={"error": {"message": "rate limited"}},
+        )
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    @patch("anthropic.Anthropic")
+    def test_connection_error_returns_none(self, mock_anthropic_cls):
+        """APIConnectionError must show error and return None."""
+        import anthropic
+        mock_client = MagicMock()
+        mock_client.messages.create.side_effect = anthropic.APIConnectionError(
+            request=MagicMock(),
+        )
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    @patch("anthropic.Anthropic")
+    def test_model_fallback_on_not_found(self, mock_anthropic_cls):
+        """When primary model not found, fallback model should be tried."""
+        import anthropic
+        mock_client = MagicMock()
+        call_count = 0
+
+        def side_effect(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            if kwargs.get("model") == app.CLAUDE_MODEL:
+                raise anthropic.NotFoundError(
+                    message="model not found",
+                    response=MagicMock(status_code=404),
+                    body={"error": {"message": "model not found"}},
+                )
+            return _make_mock_response("fallback result")
+
+        mock_client.messages.create.side_effect = side_effect
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system", "user")
+        assert result == "fallback result"
+        assert call_count == 2  # Tried primary, then fallback
+
+    @patch("anthropic.Anthropic")
+    def test_both_models_not_found(self, mock_anthropic_cls):
+        """When both models not found, must return None with error."""
+        import anthropic
+        mock_client = MagicMock()
+        mock_client.messages.create.side_effect = anthropic.NotFoundError(
+            message="model not found",
+            response=MagicMock(status_code=404),
+            body={"error": {"message": "model not found"}},
+        )
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    @patch("anthropic.Anthropic")
+    def test_bad_request_returns_none(self, mock_anthropic_cls):
+        """BadRequestError must show error and return None."""
+        import anthropic
+        mock_client = MagicMock()
+        mock_client.messages.create.side_effect = anthropic.BadRequestError(
+            message="invalid request",
+            response=MagicMock(status_code=400),
+            body={"error": {"message": "invalid request"}},
+        )
+        mock_anthropic_cls.return_value = mock_client
+
+        result = app.call_claude("system", "user")
+        assert result is None
+
+    @patch("anthropic.Anthropic")
+    def test_usage_tracking_increments(self, mock_anthropic_cls):
+        """Each successful call must increment api_call_count."""
+        import streamlit as st
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = _make_mock_response("ok")
+        mock_anthropic_cls.return_value = mock_client
+
+        app.call_claude("s", "u")
+        assert st.session_state["api_call_count"] == 1
+        app.call_claude("s", "u")
+        assert st.session_state["api_call_count"] == 2
+
+    @patch("anthropic.Anthropic")
+    def test_cost_calculation(self, mock_anthropic_cls):
+        """Cost must be calculated from input/output tokens."""
+        import streamlit as st
+        block = SimpleNamespace(text="ok")
+        usage = SimpleNamespace(input_tokens=1000, output_tokens=500)
+        resp = SimpleNamespace(content=[block], usage=usage)
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = resp
+        mock_anthropic_cls.return_value = mock_client
+
+        app.call_claude("s", "u")
+        cost = st.session_state["api_total_cost_usd"]
+        # Expected: (1000 * 3 + 500 * 15) / 1_000_000 = 10500 / 1_000_000 = 0.0105
+        assert abs(cost - 0.0105) < 0.0001
+
+
+# ---------------------------------------------------------------------------
+# PDF extraction flow
+# ---------------------------------------------------------------------------
+
+
+class TestPDFExtractionFlow:
+    """Deep tests for the PDF reading and extraction pipeline."""
+
+    def test_pymupdf_reads_helios_pdf(self):
+        """Verify PyMuPDF can read the user's test PDF."""
+        import fitz
+        pdf_path = Path(r"C:\Users\tsats\Desktop\ELS_GA_98198.002_1205.pdf")
+        if not pdf_path.exists():
+            pytest.skip("Test PDF not available")
+        doc = fitz.open(str(pdf_path))
+        assert doc.page_count >= 1
+        text = str(doc[0].get_text())
+        assert len(text) > 100, "PDF should contain readable text"
+        doc.close()
+
+    def test_pymupdf_text_has_helios_content(self):
+        """The Helios PDF must contain relevant technical content."""
+        import fitz
+        pdf_path = Path(r"C:\Users\tsats\Desktop\ELS_GA_98198.002_1205.pdf")
+        if not pdf_path.exists():
+            pytest.skip("Test PDF not available")
+        doc = fitz.open(str(pdf_path))
+        text = str(doc[0].get_text()).lower()
+        doc.close()
+        # Should contain electrical/installation terms
+        assert any(
+            term in text
+            for term in ["els", "helios", "ventilator", "anschluss", "montage"]
+        ), "PDF doesn't contain expected Helios terms"
+
+    def test_extraction_prompt_exists_and_valid(self):
+        """Extraction prompt must exist and contain JSON schema."""
+        prompt = app.read_prompt(app.PROMPT_EXTRACTION)
+        assert len(prompt) > 100
+        assert "products" in prompt
+        assert "JSON" in prompt
+        assert "product_name" in prompt
+
+    def test_matching_prompt_exists_and_valid(self):
+        """Matching prompt must exist and contain recommendation schema."""
+        prompt = app.read_prompt(app.PROMPT_MATCHING)
+        assert len(prompt) > 100
+        assert "recommendations" in prompt
+        assert "rank" in prompt
+
+    def test_json_cleaning_strips_markdown_fences(self):
+        """JSON wrapped in ```json fences should be cleaned correctly."""
+        wrapped = '```json\n{"products": []}\n```'
+        cleaned = wrapped.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1]
+            cleaned = cleaned.rsplit("```", 1)[0]
+        data = json.loads(cleaned)
+        assert data == {"products": []}
+
+    def test_json_cleaning_handles_plain_json(self):
+        """Plain JSON without fences should parse correctly."""
+        plain = '{"products": [{"product_name": "ELS NFC"}]}'
+        cleaned = plain.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1]
+            cleaned = cleaned.rsplit("```", 1)[0]
+        data = json.loads(cleaned)
+        assert data["products"][0]["product_name"] == "ELS NFC"
+
+    def test_json_cleaning_handles_triple_backticks_only(self):
+        """JSON with just ``` (no language tag) should also work."""
+        wrapped = '```\n{"test": true}\n```'
+        cleaned = wrapped.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1]
+            cleaned = cleaned.rsplit("```", 1)[0]
+        data = json.loads(cleaned)
+        assert data["test"] is True
+
+    def test_pdf_size_limit_constant(self):
+        """Size limit must be set."""
+        assert app.MAX_PDF_SIZE_MB > 0
+        assert app.MAX_PDF_SIZE_MB <= 50
+
+    def test_pdf_page_limit_constant(self):
+        """Page limit must be set."""
+        assert app.MAX_PDF_PAGES > 0
+        assert app.MAX_PDF_PAGES <= 200
+
+    def test_extraction_chars_limit_set(self):
+        """Extraction char limit must be reasonable."""
+        assert 5000 <= app.MAX_EXTRACTION_CHARS <= 50000
+
+    def test_model_fallback_constant_exists(self):
+        """Fallback model ID must be defined."""
+        assert hasattr(app, "CLAUDE_MODEL_FALLBACK")
+        assert len(app.CLAUDE_MODEL_FALLBACK) > 0
+        assert app.CLAUDE_MODEL_FALLBACK != app.CLAUDE_MODEL
+
+
+# ---------------------------------------------------------------------------
+# API connection test
+# ---------------------------------------------------------------------------
+
+
+class TestAPIConnectionTest:
+    """Tests for the _test_api_connection helper."""
+
+    def test_function_exists(self):
+        """_test_api_connection must be defined."""
+        assert callable(app._test_api_connection)
