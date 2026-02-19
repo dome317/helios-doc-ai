@@ -48,7 +48,7 @@ graph TD
 
 ## Modellauswahl-Begründungen
 
-### LLM: Claude Sonnet (Primary)
+### LLM: Claude Sonnet 4.6 (Primary)
 - **Stärke:** Zuverlässigstes JSON-Output-Format, exzellente Deutsch-Kompetenz
 - **Trade-off:** Höhere Kosten als Open-Source, API-Abhängigkeit
 - **Alternative evaluiert:** Llama-3.3-70B via Groq – schneller/günstiger, aber weniger zuverlässig bei strukturierter Extraktion

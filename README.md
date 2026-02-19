@@ -2,7 +2,7 @@
 
 > **Bewerbung für:** Junior AI Developer & Consultant (m/w/d) | Helios Ventilatoren GmbH + Co KG | Job-ID 53926
 
-🔗 **[Live Demo](URL)** | 🎥 **[Video-Walkthrough – 60 Sekunden](URL)** | 📄 **[Stellenausschreibung](https://karriere.heliosventilatoren.de/helios/job/53926)**
+🔗 **[Live Demo](https://helios-doc-ai.streamlit.app/)** | 📄 **[Stellenausschreibung](https://karriere.heliosventilatoren.de/helios/job/53926)**
 
 ---
 
@@ -45,7 +45,7 @@ Siehe [ARCHITECTURE.md](ARCHITECTURE.md) für Systemdiagramm und Modellauswahl-B
 | Komponente | Technologie | Begründung |
 |---|---|---|
 | Frontend | Streamlit | Schnellstes Python-UI-Framework für Prototyping |
-| LLM (Primary) | Claude Sonnet via Anthropic API | Beste JSON-Zuverlässigkeit + Deutsch-Kompetenz 2026 |
+| LLM (Primary) | Claude Sonnet 4.6 via Anthropic API | Beste JSON-Zuverlässigkeit + Deutsch-Kompetenz 2026 |
 | Embeddings | sentence-transformers/all-MiniLM-L6-v2 | Lokal, kostenlos, kein Vendor-Lock |
 | Vector Store | ChromaDB (in-memory) | Embedded, kein Server nötig |
 | ML | scikit-learn RandomForestRegressor | Interpretierbar, robust bei kleiner Datenmenge |
@@ -56,7 +56,7 @@ Siehe [ARCHITECTURE.md](ARCHITECTURE.md) für Systemdiagramm und Modellauswahl-B
 ## Schnellstart
 
 ```bash
-git clone https://github.com/[USER]/helios-doc-ai.git
+git clone https://github.com/dome317/helios-doc-ai.git
 cd helios-doc-ai
 pip install -r requirements.txt
 cp .env.example .env  # API-Keys eintragen (optional – Demo-Modus funktioniert ohne)
@@ -76,11 +76,11 @@ Für Live-AI-Funktionen: Anthropic API-Key in der Sidebar eingeben.
 
 Alle Tabs funktionieren sofort mit vorbereiteten Beispieldaten:
 
-1. **Extraktion** — Klick auf "Demo-Daten laden" zeigt eine Beispiel-Extraktion aus einem ELS NFC VOC Datenblatt
+1. **Extraktion** — Klick auf "Beispiel-PDF verwenden" lädt das Helios KWL 360 W ET Datenblatt und extrahiert live (mit API-Key) oder klick auf "Demo-Daten laden" für vorbereitete Beispieldaten
 2. **Produktsuche** — Klick auf "Demo-Suche laden" zeigt ein semantisches Ranking (5 Produkte mit Scores)
 3. **NFC-Konfiguration** — Slider bewegen, JSON-Output aktualisiert sich live
 4. **Energieschätzung** — Raumparameter einstellen, Einsparung + CO2-Vermeidung wird berechnet
-5. **Modell-Evaluation** — Vergleich Claude Sonnet vs. Llama-3.3-70B (Genauigkeit, Geschwindigkeit, Kosten)
+5. **Modell-Evaluation** — Vergleich Claude Sonnet 4.6 vs. Llama-3.3-70B (Genauigkeit, Geschwindigkeit, Kosten)
 6. **PDF-Report** — Fasst alle Tab-Ergebnisse in einem herunterladbaren PDF zusammen
 
 ### Mit API-Key (Live-AI)
@@ -89,8 +89,8 @@ API-Key in der Sidebar eingeben. Kostenkontrolle: max. 20 Aufrufe/Session, Koste
 
 #### Test-Szenario 1: PDF-Extraktion (Tab "Extraktion")
 
-Ein beliebiges Helios-Datenblatt als PDF hochladen (z.B. von [heliosventilatoren.de](https://www.heliosventilatoren.de)).
-Die AI extrahiert automatisch: Produktname, Luftleistung, Schallpegel, Schutzart, Artikelnummer, etc.
+Klick auf "Beispiel-PDF verwenden" oder ein eigenes Helios-Datenblatt hochladen (z.B. von [heliosventilatoren.de](https://www.heliosventilatoren.de)).
+Die KI extrahiert automatisch: Produktname, Luftleistung, Schallpegel, Schutzart, Artikelnummer, etc.
 
 **Erwartetes Ergebnis:** Strukturierte JSON-Tabelle mit allen erkannten technischen Daten.
 
