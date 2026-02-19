@@ -656,7 +656,7 @@ def render_tab_extraction():
                         )
                     except json.JSONDecodeError:
                         st.warning(
-                            "Claude-Antwort war kein valides JSON. "
+                            "KI-Antwort war kein valides JSON. "
                             "Zeige Demo-Daten als Beispiel."
                         )
                         _load_demo_extraction()
@@ -1436,7 +1436,7 @@ def main():
             "**4. Energieschätzung** – Stellen Sie Raumparameter ein (Größe, WRG-Wirkungsgrad, "
             "Temperaturdifferenz). Das ML-Modell berechnet die geschätzte Jahreseinsparung "
             "in kWh, EUR und CO₂.\n\n"
-            "**5. Modell-Evaluation** – Vergleich: Claude Sonnet vs. Llama-3.3-70B. "
+            "**5. Modell-Evaluation** – Vergleich: Claude Sonnet 4.6 vs. Llama-3.3-70B. "
             "Gleiches Dokument, gleiches Ziel – welches Modell extrahiert besser?\n\n"
             "**6. PDF-Report** – Fasst alle bisherigen Ergebnisse in einem "
             "herunterladbaren PDF zusammen."
